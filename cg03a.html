@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Basic Three.js App</title>
+    <style>
+      html, body { margin: 0; padding: 0; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/95/three.min.js"></script>
+    <script>
+      var scene = new THREE.Scene();
+      scene.background = new THREE.Color(00);
+
+      var camera = new THREE.PerspectiveCamera(
+        75, window.innerWidth / window.innerHeight, 0.1, 2000).translateZ(50);
+      var renderer = new THREE.WebGLRenderer();
+      renderer.setSize( window.innerWidth, window.innerHeight );
+      document.body.appendChild( renderer.domElement );
+            
+      var textureLoader = new THREE.TextureLoader().setPath('textures/');
+      const filePrefix = "y72lnvwt82jz_";
+      var cylinder = new THREE.Mesh(
+        new THREE.CylinderGeometry(15, 15, 30, 32),
+        new THREE.MeshPhongMaterial({
+          map: textureLoader.load(filePrefix + "COLOR.png"),
+          normalMap: textureLoader.load(filePrefix + "NORMALS.png"),
+          specularMap: textureLoader.load(filePrefix + "SPECULARITY.png"),
+          envMap: new THREE.CubeTextureLoader().setPath( 'textures/' ).load([
+            'pos-x.png', 'neg-x.png',
+            'pos-y.png', 'neg-y.png',
+            'pos-z.png', 'neg-z.png'
+          ]),
+          displacementMap: textureLoader.load(filePrefix + "DISPLACEMENT.png"),
+          shininess: 15
+        })
+      );
+
+      scene.add(cylinder);
+      scene.add(new THREE.PointLight(0xFF9329).translateZ(100));
+
+      var mouse = new THREE.Vector2();
+      document.addEventListener( 'mousemove', function(event) {
+        event.preventDefault();
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+      }, false );
+
+      var render = function () {
+        requestAnimationFrame( render );
+
+        var raycaster = new THREE.Raycaster();
+        var vector = new THREE.Vector3( mouse.x, mouse.y, 1 ).unproject( camera );
+        raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
+
+        var intersects = raycaster.intersectObjects( scene.children );
+
+        if(intersects.length > 0 && intersects[0].object == cylinder){
+             
+        } else cylinder.rotateY(0.01);
+
+        renderer.render( scene, camera );
+      };
+
+      render();
+    </script>
+  </body>
+</html>
