@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Basic Three.js App</title>
+    <style>
+      html, body { margin: 0; padding: 0; overflow: hidden; }
+    </style>
+  </head>
+  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/95/three.min.js"></script>
+    <script src="http://threejs.org/examples/js/loaders/ColladaLoader.js"></script>
+    <script src="http://threejs.org/examples/js/controls/OrbitControls.js"></script>
+    <script>
+      var scene = new THREE.Scene();
+      scene.background = new THREE.Color(00);
+
+      var camera = new THREE.PerspectiveCamera(
+        75, window.innerWidth / window.innerHeight, 0.1, 2000).translateZ(50);
+      camera.position.set(150, 100, 300);
+      camera.lookAt(0, 0, 0);
+
+      var renderer = new THREE.WebGLRenderer();
+      renderer.setSize( window.innerWidth, window.innerHeight );
+      document.body.appendChild( renderer.domElement );
+
+      scene.add(new THREE.GridHelper(400, 10));
+
+      var mixer, naruto;
+
+      new THREE.ColladaLoader().load('models/dae/Run/Run.dae',
+        function (collada) {
+
+            var animations = collada.animations;
+            naruto = collada.scene;
+
+            naruto.scale.set(1, 1, 1);
+            naruto.position.z = - 100;
+
+            scene.add(naruto);
+
+            mixer = new THREE.AnimationMixer(naruto);   // create global mixer
+            mixer.clipAction(animations[0]).play();     // play first animation clip
+
+        }
+      );
+      scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+      scene.add(new THREE.DirectionalLight(0xffffff, 0.8)
+        .translateX(1).translateY(1).translateZ(-1));
+
+      var controls = new THREE.OrbitControls(camera);
+      controls.minDistance = 30;
+      controls.maxDistance = 700;
+
+      var moveVector = new THREE.Vector3();
+      document.addEventListener("keydown", function(e) {
+
+          if (e.key == 'a') moveVector.x = 1;
+          if (e.key == 'd') moveVector.x = -1;
+          if (e.key == 's') moveVector.z = -1;
+          if (e.key == 'w') moveVector.z = 1;
+
+      }, false);
+      document.addEventListener("keyup", function(e) {
+
+          if (e.key == 'a') moveVector.x = 0;
+          if (e.key == 'd') moveVector.x = 0;
+          if (e.key == 's') moveVector.z = 0;
+          if (e.key == 'w') moveVector.z = 0;
+
+      }, false);
+      
+      var clock = new THREE.Clock();
+      var render = function () {
+        requestAnimationFrame( render );
+        
+        if (mixer) mixer.update(clock.getDelta());
+        if (naruto) naruto.position.add(moveVector);
+        renderer.render( scene, camera );
+      };
+
+      render();
+    </script>
+  </body>
+</html>
