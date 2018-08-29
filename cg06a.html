@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Kage Bunshin no Jutsu (影分身の術)</title>
+    <meta charset="UTF-8">
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/95/three.min.js"></script>
+    <script src="http://threejs.org/examples/js/loaders/MTLLoader.js"></script>
+    <script src="http://threejs.org/examples/js/loaders/OBJLoader.js"></script>
+    <script src="http://threejs.org/examples/js/controls/TrackballControls.js"></script>
+
+    <script>
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x7ec0ee);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+          .translateZ(500);
+        const controls = new THREE.TrackballControls(camera);
+
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5)
+            .translateX(200).translateY(200).translateZ(200);
+        scene.add(directionalLight);
+
+        let vShader, fShader;
+        function applyShaderCallback(map, child, texture) { 
+            return function(){
+                map[child.material.id] = new THREE.ShaderMaterial({
+                    uniforms: {
+                        lightSrc: { type: "v3", value: directionalLight.position },
+                        texture: { type: "t", value: texture }
+                    },
+                    vertexShader: vShader,
+                    fragmentShader: fShader
+                });
+                child.material = map[child.material.id];
+            }; 
+        };
+        const shaderCallbackList = [];
+        function tryApplyShader() {
+            if(fShader && vShader){
+                shaderCallbackList.reduce(function(_, item){
+                    item();
+                }, undefined);
+            }
+        }
+
+        {
+            const fileLoader = new THREE.FileLoader();
+            fileLoader.load('cg06a_vertex.glsl',
+                function (data) {
+                    vShader = data;
+                    tryApplyShader();
+                });
+            fileLoader.load('cg06a_fragment.glsl', function (data) {
+                    fShader = data;
+                    tryApplyShader();
+            });
+        }
+
+        let naruto;
+        const folderPath = 'models/dae/Run/86b61s2onq-Naruto/';
+        new THREE.MTLLoader().setPath(folderPath).load('2nrtbod1out.mtl', function (materials) {
+            materials.preload();
+            naruto = new THREE.OBJLoader()
+                .setMaterials(materials)
+                .setPath(folderPath)
+                .load('2nrtbod1out.obj', function (object) {
+                    const textureLoader = new THREE.TextureLoader().setPath(folderPath);
+                    const materialMap = {};
+                    object.traverse(function (child) {
+                        if (child instanceof THREE.Mesh) {
+                            if (child.material.id in materialMap) {
+                                console.log("Using predefined material", child.material.id);
+                                child.material = materialMap[child.material.id];
+                            }
+                            else {
+                                console.log("Creating new material", child.material.id, child.material);
+
+                                if (child.material.name != "Material__3")
+                                    texture = textureLoader.load("ntxr001.png");
+                                else
+                                    texture = textureLoader.load("ntxr004.png");
+                                
+                                shaderCallbackList.push(applyShaderCallback(materialMap, child, texture));
+                                tryApplyShader();
+                            }
+
+                        }
+                    });
+                    object.position.set(0, -100, 300);
+                    object.rotation.set(-Math.PI / 2, 0, 0);
+                    scene.add(object);
+            });
+        });
+
+        const render = function () {
+            requestAnimationFrame(render);
+
+            controls.update();
+            renderer.render(scene, camera);
+        };
+
+        render();
+
+    </script>
+
+</body>
+
+</html>
